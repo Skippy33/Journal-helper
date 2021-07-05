@@ -12,3 +12,5 @@ class gui:
 myrecording = sd.rec(frames=(44100 * 5), blocking=True, samplerate=fs, channels=2)
 sd.stop()
 write('output.wav', fs, myrecording)  # Save as WAV file
+
+
