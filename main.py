@@ -1,3 +1,5 @@
+import time
+
 import pyaudio
 import wave
 import tkinter
@@ -21,7 +23,7 @@ class Recording:
             self.window.pausephoto = pausephoto.subsample(3, 3)
             # get the photo for the play button and downsize
             playphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\play.png"))
-            self.window.playphoto = playphoto.subsample(3, 3)
+            self.window.playphoto = playphoto.subsample(5, 5)
 
             # make the pause button
             self.pausebutton = tkinter.Button(self.window, image=self.window.pausephoto, text="pause", compound="bottom", command=self.Pause)
@@ -48,15 +50,29 @@ class Recording:
             if self.pausebutton["text"] == "pause":
                 # get the photo for the play button
                 playphoto = self.window.playphoto
-                # downsize it
-                playphoto = playphoto.subsample(2, 2)
                 # save a copy to display correctly
                 self.window.playphoto = playphoto
                 # change the photo
                 self.pausebutton.configure(image=playphoto)
                 # change the text
                 self.pausebutton["text"] = "continue"
-                # update the window
+                # pause the stream
+                self.stream.stop_stream()
+                #update the window
+                self.window.update()
+
+            elif self.pausebutton["text"] == "continue":
+                # get the photo for the play button
+                pausephoto = self.window.pausephoto
+                # save a copy to display correctly
+                self.window.pausephoto = pausephoto
+                # change the photo
+                self.pausebutton.configure(image=pausephoto)
+                # change the text
+                self.pausebutton["text"] = "pause"
+                # restart the stream
+                self.stream.start_stream()
+                #update the window
                 self.window.update()
 
 
@@ -113,6 +129,7 @@ class Recording:
 
     # switches the recording
     def recordswitch(self, from_button=False):
+
         # update the window
         self.window.update()
 
@@ -137,11 +154,15 @@ class Recording:
             self.stoprecording()
 
         # elif it is currently recording and not gettwing a call from the button
-        elif self.recordbutton["text"] == "stop recording" and not from_button:
+        elif self.recordbutton["text"] == "stop recording" and not from_button and self.stream.is_active():
             # add the newest frames from the stream to the list
             self.frames.append(self.stream.read(1024))
             # go back to the start
             self.recordswitch()
+
+        #if the stream is paused, wait a bit and restart the loop
+        time.sleep(.1)
+        self.recordswitch()
 
 
 
