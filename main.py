@@ -1,6 +1,7 @@
 import pyaudio
 import wave
 import tkinter
+import itertools as it
 
 #making a class for stuff related to recording
 class Recording:
@@ -9,27 +10,43 @@ class Recording:
     # make a class for all the things for recording controls
     class Recordcontrols():
         # initialize
-        def __init__(self, window):
+        def __init__(self, window, stream):
+            self.stream = stream
             self.window = window
+
             pausephoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\pause.png"))
-            pausephoto = pausephoto.subsample(3, 3)
-            self.pausebutton = tkinter.Button(self.window, image=pausephoto)
+            self.window.pausephoto = pausephoto.subsample(3, 3)
+
+            playphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\play.png"))
+            self.window.playphoto = playphoto.subsample(3, 3)
+
+            self.pausebutton = tkinter.Button(self.window, image=self.window.pausephoto, text="pause", compound="bottom", command=self.Pause)
             self.pausebutton.image = pausephoto
             stopphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\stop.png"))
             stopphoto = stopphoto.subsample(3, 3)
-            self.stopbutton = tkinter.Button(self.window, image=stopphoto)
+            self.stopbutton = tkinter.Button(self.window, image=stopphoto, text="restart", compound="bottom")
             self.stopbutton.image = stopphoto
 
         def StartRecording(self):
             self.pausebutton.pack(side="left")
             self.stopbutton.pack(side="right")
-            self.window.geometry("400x200")
+            self.window.geometry("400x250")
             tkinter.mainloop()
 
         # destroys buttons at end of recording
         def EndRecording(self):
             self.pausebutton.destroy()
             self.stopbutton.destroy()
+
+        def Pause(self):
+            if self.pausebutton["text"] == "pause":
+                print("yes")
+                playphoto = self.window.playphoto
+                playphoto = playphoto.subsample(2, 2)
+                self.window.playphoto = playphoto
+                self.pausebutton.configure(image=playphoto)
+                self.pausebutton["text"] = "continue"
+                self.window.update()
 
 
     #initialize the variables
@@ -40,7 +57,6 @@ class Recording:
         self.recordbutton = recordbutton
         #audio recording variable
         self.audio = pyaudio.PyAudio()
-        self.recordcontrols = self.Recordcontrols(self.window)
         #list of frames
         self.frames = []
 
@@ -49,6 +65,7 @@ class Recording:
         #starts the recording
         self.stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
         #go back to start
+        self.recordcontrols = self.Recordcontrols(self.window, self.stream)
         self.recordcontrols.pausebutton.pack(side="left")
         self.recordcontrols.stopbutton.pack(side="right")
         self.window.geometry("400x200")
