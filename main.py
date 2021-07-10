@@ -1,6 +1,5 @@
 import os
 import time
-
 import pyaudio
 import wave
 import tkinter
@@ -37,7 +36,7 @@ def initialize():
     window.stopphoto = window.stopphoto.subsample(3, 3)
 
     # make the stop button
-    window.restartbutton = tkinter.Button(window, image=window.stopphoto, text="restart", compound="bottom")
+    window.restartbutton = tkinter.Button(window, image=window.stopphoto, text="restart", compound="bottom", command=restartrecording)
     # save a copy of the image
     window.restartbutton.image = window.stopphoto
     # mainloop
@@ -66,9 +65,31 @@ def recordswitch(from_button = False):
         # save the files
         stoprecording()
 
-'''def restartrecording():
-    stoprecording()
-    os.remove("temp.wav")'''
+def restartrecording():
+    # stops the audio stream
+    audio.stream.stop_stream()
+    # closes the audio stream
+    audio.stream.close()
+    # open a file to writing
+    sound_file = wave.open("temp.wav", "wb")
+    # set the number of channels
+    sound_file.setnchannels(1)
+    # the "width" (presumably the type of file)
+    sound_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
+    # sets framerate
+    sound_file.setframerate(44100)
+    # actually writes the file
+    sound_file.writeframes(b"".join(audio.frames))
+    # closes the file
+    sound_file.close()
+    # clears frames list for any more recordings
+    audio.frames = []
+    window.pausebutton.forget()
+    window.restartbutton.forget()
+    os.remove("temp.wav")
+    window.recordbutton["text"] = "start recording"
+    window.geometry("200x100")
+
 
 # stops recording
 def stoprecording():
