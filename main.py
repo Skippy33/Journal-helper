@@ -3,7 +3,7 @@ import time
 import pyaudio
 import wave
 import tkinter
-
+import sys
 
 
 def initialize():
@@ -39,6 +39,10 @@ def initialize():
     window.restartbutton = tkinter.Button(window, image=window.stopphoto, text="restart", compound="bottom", command=restartrecording)
     # save a copy of the image
     window.restartbutton.image = window.stopphoto
+
+    window.deletebutton = tkinter.Button(window, image=window.stopphoto, text="delete recording", compound="bottom", command=deleterecording)
+
+    window.deletebutton.image = window.stopphoto
     # mainloop
     window.mainloop()
 
@@ -115,6 +119,8 @@ def stoprecording():
     audio.frames = []
     window.pausebutton.forget()
     window.restartbutton.forget()
+    window.recordbutton.forget()
+    endscreen()
 
 def pause():
     global audio
@@ -170,7 +176,20 @@ def startrecording():
     # go back to the start so that the frames can be saved
     whilerecording()
 
+def endscreen():
+    global window
+    window.deletebutton.pack(side="top")
+
+def deleterecording():
+    global window
+    os.remove("temp.wav")
+    window.destroy()
+    audio = None
+    initialize()
+
+
 initialize()
 
 #need to get errors when stopping. They dont affect anything, but they are annoying
-#need to get pause/play going
+#need to implement a way to add PS.
+#way to delete recording after it is recorded
