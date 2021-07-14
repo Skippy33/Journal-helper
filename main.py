@@ -3,8 +3,7 @@ import time
 import pyaudio
 import wave
 import tkinter
-import sys
-
+from pydub import AudioSegment
 
 def initialize():
     global audio
@@ -40,10 +39,21 @@ def initialize():
     # save a copy of the image
     window.restartbutton.image = window.stopphoto
 
+    # makes button to delte recording when done
     window.deletebutton = tkinter.Button(window, image=window.stopphoto, text="delete recording", compound="bottom", command=deleterecording)
-
+    # save the image copy
     window.deletebutton.image = window.stopphoto
 
+    window.PSphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\PS.png"))
+    window.PSphoto = window.PSphoto.subsample(3, 3)
+    window.PSbutton = tkinter.Button(window, image=window.PSphoto, text="add PS", compound="bottom", command=PS)
+    window.PSbutton.image = window.PSphoto
+
+    window.savephoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\save.png"))
+    window.savephoto = window.savephoto.subsample(3, 3)
+
+    window.savebutton = tkinter.Button(window, image=window.savephoto, compound="bottom", command=saverecording)
+    window.savebutton.inage = window.savephoto
     # mainloop
     window.mainloop()
 
@@ -100,6 +110,7 @@ def restartrecording():
 def stoprecording():
     # stops the audio stream
     audio.stream.stop_stream()
+    '''
     # closes the audio stream
     audio.stream.close()
     # closes the audio window
@@ -117,7 +128,7 @@ def stoprecording():
     # closes the file
     sound_file.close()
     # clears frames list for any more recordings
-    audio.frames = []
+    audio.frames = []'''
     window.pausebutton.forget()
     window.restartbutton.forget()
     window.recordbutton.forget()
@@ -192,6 +203,9 @@ def endscreen():
     global window
     # pack the deletebutton
     window.deletebutton.pack(side="top")
+    window.PSbutton.pack()
+    window.savebutton.pack()
+    window.geometry("400x600")
 
 # what to do when delete button is pressed
 def deleterecording():
@@ -203,7 +217,37 @@ def deleterecording():
     #restart
     initialize()
 
+def PS():
+    global window
+    global audio
+    if window.PSbutton["text"] == "add PS":
+        window.PSbutton["text"] = "stop PS"
+        audio.stream.start_stream()
+        whilerecording()
+    elif window.PSbutton["text"] == "stop PS":
+        window.PSbutton["text"] = "add PS"
+        audio.stream.stop_stream()
 
+def saverecording():
+    global audio
+    # closes the audio stream
+    audio.stream.close()
+    # closes the audio window
+    audio.terminate()
+    # open a file to writing
+    sound_file = wave.open("temp.wav", "wb")
+    # set the number of channels
+    sound_file.setnchannels(1)
+    # the "width" (presumably the type of file)
+    sound_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
+    # sets framerate
+    sound_file.setframerate(44100)
+    # actually writes the file
+    sound_file.writeframes(b"".join(audio.frames))
+    # closes the file
+    sound_file.close()
+    # clears frames list for any more recordings
+    audio.frames = []
 initialize()
 
 #need to get errors when stopping. They dont affect anything, but they are annoying
