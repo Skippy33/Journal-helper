@@ -43,6 +43,7 @@ def initialize():
     window.deletebutton = tkinter.Button(window, image=window.stopphoto, text="delete recording", compound="bottom", command=deleterecording)
 
     window.deletebutton.image = window.stopphoto
+
     # mainloop
     window.mainloop()
 
@@ -122,6 +123,7 @@ def stoprecording():
     window.recordbutton.forget()
     endscreen()
 
+# what to do when pause button is pressed
 def pause():
     global audio
     print(audio.stream.is_stopped())
@@ -151,18 +153,27 @@ def pause():
         audio.stream.start_stream()
         # update the window
 
+#what to do while recording
 def whilerecording():
     global audio
+    # while the stream is active
     while audio.stream.is_active():
+        # add the frames to the list
         audio.frames.append(audio.stream.read(1024))
+        # update the window
         window.update()
+    # when the while loop ends
     else:
+        # if the stream is stopped
         if audio.stream.is_stopped():
-            time.sleep(.2)
+            # wait a short time
+            time.sleep(.5)
+            # update the window
             window.update()
+            # recursively go to this function
             whilerecording()
 
-    # starts recording
+# starts recording
 def startrecording():
     # starts the recording
     audio.stream = audio.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
@@ -176,20 +187,25 @@ def startrecording():
     # go back to the start so that the frames can be saved
     whilerecording()
 
+# starts the screen after recording
 def endscreen():
     global window
+    # pack the deletebutton
     window.deletebutton.pack(side="top")
 
+# what to do when delete button is pressed
 def deleterecording():
     global window
+    # delete the temp file
     os.remove("temp.wav")
+    #destroy the window
     window.destroy()
-    audio = None
+    #restart
     initialize()
 
 
 initialize()
 
 #need to get errors when stopping. They dont affect anything, but they are annoying
-#need to implement a way to add PS.
-#way to delete recording after it is recorded
+#need to implement a way to add PS
+#name file to date (d-m-y) and location (such as d-m-y Location)
