@@ -1,10 +1,12 @@
 import os
 import time
 import pyaudio
-import wave
+from wave import open as waveopen
 import tkinter
 from datetime import datetime
 from requests import get
+import speech_recognition as sr
+from sys import exit as sysexit
 
 def initialize():
     global audio
@@ -20,10 +22,10 @@ def initialize():
     window.recordbutton.configure(command=lambda : recordswitch(from_button=True))
     window.recordbutton.pack(side="top")
     # get the photo for the pause button and downsize
-    window.pausephoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\pause.png"))
+    window.pausephoto = tkinter.PhotoImage(file=(r"assets\pause.png"))
     window.pausephoto = window.pausephoto.subsample(3, 3)
     # get the photo for the play button and downsize
-    window.playphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\play.png"))
+    window.playphoto = tkinter.PhotoImage(file=(r"assets\play.png"))
     window.playphoto = window.playphoto.subsample(5, 5)
 
     # make the pause button
@@ -32,7 +34,7 @@ def initialize():
     window.pausebutton.image = window.pausephoto
 
     # get the restart photo and downsize
-    window.stopphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\stop.png"))
+    window.stopphoto = tkinter.PhotoImage(file=(r"assets\stop.png"))
     window.stopphoto = window.stopphoto.subsample(3, 3)
 
     # make the stop button
@@ -45,12 +47,12 @@ def initialize():
     # save the image copy
     window.deletebutton.image = window.stopphoto
 
-    window.PSphoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\PS.png"))
+    window.PSphoto = tkinter.PhotoImage(file=(r"assets\PS.png"))
     window.PSphoto = window.PSphoto.subsample(2, 2)
     window.PSbutton = tkinter.Button(window, image=window.PSphoto, text="add PS", compound="bottom", command=PS)
     window.PSbutton.image = window.PSphoto
 
-    window.finalizephoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\finalize.png"))
+    window.finalizephoto = tkinter.PhotoImage(file=(r"assets\finalize.png"))
     window.finalizephoto = window.finalizephoto.subsample(2, 2)
 
     window.finalizebutton = tkinter.Button(window, image=window.finalizephoto, text="finalize", compound="bottom", command=finalizerecording)
@@ -62,12 +64,17 @@ def initialize():
     preentry = tkinter.StringVar(window, now.strftime("%D").replace("/", "-") + " " + location["city"] + ", " + location["regionName"])
     window.savenamebox = tkinter.Entry(window, textvariable=preentry)
 
-    window.savephoto = tkinter.PhotoImage(file=(r"C:\Users\Sebastien\PycharmProjects\Journaling\assets\save.png"))
+    window.savephoto = tkinter.PhotoImage(file=(r"assets\save.png"))
     window.savephoto = window.savephoto.subsample(4, 4)
 
     window.savebutton = tkinter.Button(window, image=window.savephoto, text="save files", compound="bottom", command=saverecording)
     window.savebutton.image = window.finalizephoto
 
+    window.textfilebox = tkinter.Text(window, width=40, height=10)
+
+    window.filelocationlabel = tkinter.Label(window, text="location to save files")
+    window.filelocationbox = tkinter.Entry(window)
+    window.filelocationbox.insert(-1, open("save variables.txt", "r").read())
     # mainloop
     window.mainloop()
 
@@ -100,7 +107,7 @@ def restartrecording():
     # closes the audio stream
     audio.stream.close()
     # open a file to writing
-    sound_file = wave.open("temp.wav", "wb")
+    sound_file = waveopen("temp.wav", "wb")
     # set the number of channels
     sound_file.setnchannels(1)
     # the "width" (presumably the type of file)
@@ -236,23 +243,18 @@ def PS():
 def finalizerecording():
     global audio
     global window
+    # set the window size
+    window.geometry("300x400")
+    # remove the buttons from earlier
     window.finalizebutton.forget()
     window.PSbutton.forget()
     window.deletebutton.forget()
-    window.savenamelabel.pack()
-    window.savenamebox.pack()
-    window.savebutton.pack()
-    window.mainloop()
-
-
-def saverecording():
-    print("test")
     # closes the audio stream
     audio.stream.close()
     # closes the audio window
     audio.terminate()
     # open a file to writing
-    sound_file = wave.open(window.savenamebox.get() + ".wav", "wb")
+    sound_file = waveopen("temp.wav", "wb")
     # set the number of channels
     sound_file.setnchannels(1)
     # the "width" (presumably the type of file)
@@ -263,10 +265,53 @@ def saverecording():
     sound_file.writeframes(b"".join(audio.frames))
     # closes the file
     sound_file.close()
-    # clears frames list for any more recordings
-    audio.frames = []
 
+    # start a speech recognizer
+    r = sr.Recognizer()
+    # with the audiofile as the var "source"
+    with sr.AudioFile("temp.wav") as source:
+        # listen for the data (load audio to memory)
+        audio_data = r.record(source)
+        # recognize (convert from speech to text)
+        text = r.recognize_google(audio_data)
+
+    os.remove("temp.wav")
+
+    # load the text into the box for the user to check
+    window.textfilebox.insert(1.0, text)
+    # display the GUI elements
+    window.textfilebox.pack()
+    window.savenamelabel.pack()
+    window.savenamebox.pack(ipadx=50)
+    window.filelocationlabel.pack()
+    window.filelocationbox.pack(ipadx=50)
+    window.savebutton.pack()
+    # mainloop
+    window.mainloop()
+
+# what to do when the button to save is pressed
+def saverecording():
+    # open the file to save the location the file should have
+    open("save variables.txt", "w").write(window.filelocationbox.get())
+
+    # open a file to writing
+    sound_file = waveopen(window.filelocationbox.get() + "\\" + window.savenamebox.get() + ".wav", "wb")
+    # set the number of channels
+    sound_file.setnchannels(1)
+    # the "width" (presumably the type of file)
+    sound_file.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
+    # sets framerate
+    sound_file.setframerate(44100)
+    # actually writes the file
+    sound_file.writeframes(b"".join(audio.frames))
+    # closes the file
+    sound_file.close()
+
+    # create the text file with the transcription
+    open(window.filelocationbox.get() + "\\" + window.savenamebox.get() + ".txt", "w").write(window.textfilebox.get("1.0", "end"))
+
+    # stop the program
+    sysexit(1)
+
+# start the whole program
 initialize()
-
-#need to get errors when stopping. They dont affect anything, but they are annoying
-#need to finally get around to transcription
