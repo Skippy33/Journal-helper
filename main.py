@@ -4,9 +4,13 @@ import pyaudio
 from wave import open as waveopen
 import tkinter
 from datetime import datetime
+
+import speech_recognition
 from requests import get
 import speech_recognition as sr
 from sys import exit as sysexit
+from textwrap import fill
+import sys
 
 def initialize():
     global audio
@@ -22,10 +26,10 @@ def initialize():
     window.recordbutton.configure(command=lambda : recordswitch(from_button=True))
     window.recordbutton.pack(side="top")
     # get the photo for the pause button and downsize
-    window.pausephoto = tkinter.PhotoImage(file=(r"assets\pause.png"))
+    window.pausephoto = tkinter.PhotoImage(file=(resourcepath(r"assets\pause.png")))
     window.pausephoto = window.pausephoto.subsample(3, 3)
     # get the photo for the play button and downsize
-    window.playphoto = tkinter.PhotoImage(file=(r"assets\play.png"))
+    window.playphoto = tkinter.PhotoImage(file=(resourcepath(r"assets\play.png")))
     window.playphoto = window.playphoto.subsample(5, 5)
 
     # make the pause button
@@ -34,7 +38,7 @@ def initialize():
     window.pausebutton.image = window.pausephoto
 
     # get the restart photo and downsize
-    window.stopphoto = tkinter.PhotoImage(file=(r"assets\stop.png"))
+    window.stopphoto = tkinter.PhotoImage(file=(resourcepath(r"assets\stop.png")))
     window.stopphoto = window.stopphoto.subsample(3, 3)
 
     # make the stop button
@@ -47,12 +51,12 @@ def initialize():
     # save the image copy
     window.deletebutton.image = window.stopphoto
 
-    window.PSphoto = tkinter.PhotoImage(file=(r"assets\PS.png"))
+    window.PSphoto = tkinter.PhotoImage(file=(resourcepath(resourcepath(r"assets\PS.png"))))
     window.PSphoto = window.PSphoto.subsample(2, 2)
     window.PSbutton = tkinter.Button(window, image=window.PSphoto, text="add PS", compound="bottom", command=PS)
     window.PSbutton.image = window.PSphoto
 
-    window.finalizephoto = tkinter.PhotoImage(file=(r"assets\finalize.png"))
+    window.finalizephoto = tkinter.PhotoImage(file=(resourcepath(r"assets\finalize.png")))
     window.finalizephoto = window.finalizephoto.subsample(2, 2)
 
     window.finalizebutton = tkinter.Button(window, image=window.finalizephoto, text="finalize", compound="bottom", command=finalizerecording)
@@ -64,21 +68,53 @@ def initialize():
     preentry = tkinter.StringVar(window, now.strftime("%D").replace("/", "-") + " " + location["city"] + ", " + location["regionName"])
     window.savenamebox = tkinter.Entry(window, textvariable=preentry)
 
-    window.savephoto = tkinter.PhotoImage(file=(r"assets\save.png"))
+    window.savephoto = tkinter.PhotoImage(file=(resourcepath(r"assets\save.png")))
     window.savephoto = window.savephoto.subsample(4, 4)
 
     window.savebutton = tkinter.Button(window, image=window.savephoto, text="save files", compound="bottom", command=saverecording)
     window.savebutton.image = window.finalizephoto
 
-    window.textfilebox = tkinter.Text(window, width=40, height=10)
+    window.textfilebox = tkinter.Text(window, width=60, height=13)
 
     window.filelocationlabel = tkinter.Label(window, text="location to save files")
     window.filelocationbox = tkinter.Entry(window)
-    window.filelocationbox.insert(-1, open("save variables.txt", "r").read())
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    else:
+        application_path = os.path.dirname(__file__)
+    config_path = os.path.join(application_path, "save variables.txt")
+    window.filelocationbox.insert(-1, open(config_path, "r").read())
     # mainloop
+    window.wm_title("journaler")
     window.mainloop()
 
-def recordswitch(from_button = False):
+#converts relative paths from the EXE to absolute paths
+def resourcepath(relative_path):
+    is_frozen = getattr(sys, 'frozen', False)
+    if is_frozen:
+        base_path = getattr(sys, '_MEIPASS', '')
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, relative_path)
+
+def Popup(message):# makes popup to tell user what is correct formatting
+    #make a new window
+    popup = tkinter.Tk()
+    #gives window title (top bar)
+    popup.wm_title("!")
+    #make a label
+    label = tkinter.Label(popup, text=message, font=("Helvetica", 10))
+    #put it on screen
+    label.pack(side="top", fill="x", pady=10)
+    #make a button that destroys the popup
+    B1 = tkinter.Button(popup, text="Okay", command=popup.destroy)
+    #put the button on screen
+    B1.pack()
+    #mainloop it
+    popup.mainloop()
+
+def recordswitch(from_button=False):
     # update the window
     window.update()
 
@@ -94,7 +130,6 @@ def recordswitch(from_button = False):
 
     # elif the text is "stop[ recording" and the press comes from the button
     elif window.recordbutton["text"] == "stop recording" and from_button:
-        print("stopped")
         # update the text
         window.recordbutton["text"] = "start recording"
         window.recordbutton.update()
@@ -107,7 +142,7 @@ def restartrecording():
     # closes the audio stream
     audio.stream.close()
     # open a file to writing
-    sound_file = waveopen("temp.wav", "wb")
+    sound_file = waveopen(resourcepath(r"assets\temp.wav"), "wb")
     # set the number of channels
     sound_file.setnchannels(1)
     # the "width" (presumably the type of file)
@@ -122,7 +157,7 @@ def restartrecording():
     audio.frames = []
     window.pausebutton.forget()
     window.restartbutton.forget()
-    os.remove("temp.wav")
+    os.remove(resourcepath(r"assets\temp.wav"))
     window.recordbutton["text"] = "start recording"
     window.geometry("200x100")
 
@@ -139,7 +174,6 @@ def stoprecording():
 # what to do when pause button is pressed
 def pause():
     global audio
-    print(audio.stream.is_stopped())
     if window.pausebutton["text"] == "pause":
         # get the photo for the play button
         window.playphoto = window.playphoto
@@ -215,7 +249,7 @@ def endscreen():
 def deleterecording():
     global window
     # delete the temp file
-    os.remove("temp.wav")
+    audio.frames = []
     # destroy the window
     window.destroy()
     # restart
@@ -244,7 +278,7 @@ def finalizerecording():
     global audio
     global window
     # set the window size
-    window.geometry("300x400")
+    window.geometry("600x400")
     # remove the buttons from earlier
     window.finalizebutton.forget()
     window.PSbutton.forget()
@@ -254,7 +288,7 @@ def finalizerecording():
     # closes the audio window
     audio.terminate()
     # open a file to writing
-    sound_file = waveopen("temp.wav", "wb")
+    sound_file = waveopen(resourcepath(r"assets\temp.wav"), "wb")
     # set the number of channels
     sound_file.setnchannels(1)
     # the "width" (presumably the type of file)
@@ -269,16 +303,20 @@ def finalizerecording():
     # start a speech recognizer
     r = sr.Recognizer()
     # with the audiofile as the var "source"
-    with sr.AudioFile("temp.wav") as source:
-        # listen for the data (load audio to memory)
-        audio_data = r.record(source)
-        # recognize (convert from speech to text)
-        text = r.recognize_google(audio_data)
+    try:
+        with sr.AudioFile(resourcepath(r"assets\temp.wav")) as source:
+            # listen for the data (load audio to memory)
+            audio_data = r.record(source)
+            # recognize (convert from speech to text)
+            text = r.recognize_google(audio_data)
+    except speech_recognition.UnknownValueError:
+        text = "something unrecognizable"
 
-    os.remove("temp.wav")
+    #deletes the temp file
+    os.remove(resourcepath(r"assets\temp.wav"))
 
     # load the text into the box for the user to check
-    window.textfilebox.insert(1.0, text)
+    window.textfilebox.insert(1.0, fill(text, 60))
     # display the GUI elements
     window.textfilebox.pack()
     window.savenamelabel.pack()
@@ -292,8 +330,17 @@ def finalizerecording():
 # what to do when the button to save is pressed
 def saverecording():
     # open the file to save the location the file should have
-    open("save variables.txt", "w").write(window.filelocationbox.get())
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    else:
+        application_path = os.path.dirname(__file__)
+    config_path = os.path.join(application_path, "save variables.txt")
 
+    open(config_path, "w").write(window.filelocationbox.get())
+    #tests if the input directory is valid
+    if not os.path.isdir(window.filelocationbox.get()):
+        Popup("invalid folder name, \n try the full path")
+        return
     # open a file to writing
     sound_file = waveopen(window.filelocationbox.get() + "\\" + window.savenamebox.get() + ".wav", "wb")
     # set the number of channels
@@ -315,3 +362,20 @@ def saverecording():
 
 # start the whole program
 initialize()
+
+#need to add newline characters to the transcription
+#remember to disable antivirus when converting to EXE
+#use pyinstaller journaler.spec to make EXE, you can also use other options
+#good references for pyinstaller:
+#https://hackernoon.com/the-one-stop-guide-to-easy-cross-platform-python-freezing-part-1-c53e66556a0a
+#https://pyinstaller.readthedocs.io/en/stable/spec-files.html
+
+#commands to use
+#pyi-makespec main.py -n journaler --noconsole --onefile --icon=icon.ico  makes the spec, remove --noconsole to get output
+
+#put this in spec file, set data to this
+#def get_resources():
+#    data_files = []
+#    for file_name in os.listdir('assets'):
+#        data_files.append((os.path.join('assets', file_name), 'assets'))
+#    return data_files
