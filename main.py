@@ -277,6 +277,7 @@ def PS():
 def finalizerecording():
     global audio
     global window
+    Popup("processing audio for transcription. \n Depending on length of audio, could take \n some time.")
     # set the window size
     window.geometry("600x400")
     # remove the buttons from earlier
@@ -355,7 +356,7 @@ def saverecording():
     sound_file.close()
 
     # create the text file with the transcription
-    open(window.filelocationbox.get() + "\\" + window.savenamebox.get() + ".txt", "w").write(window.textfilebox.get("1.0", "end"))
+    open(window.filelocationbox.get() + "\\" + window.savenamebox.get() + ".txt", "w").write(fill(window.textfilebox.get("1.0", "end"), 60))
 
     # stop the program
     sysexit(1)
@@ -379,3 +380,6 @@ initialize()
 #    for file_name in os.listdir('assets'):
 #        data_files.append((os.path.join('assets', file_name), 'assets'))
 #    return data_files
+
+#to compile type:
+#pyinstaller journaler.spec
