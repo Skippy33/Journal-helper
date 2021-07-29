@@ -317,7 +317,7 @@ def finalizerecording():
     os.remove(resourcepath(r"assets\temp.wav"))
 
     # load the text into the box for the user to check
-    window.textfilebox.insert(1.0, fill(text, 60))
+    window.textfilebox.insert(1.0, text)
     # display the GUI elements
     window.textfilebox.pack()
     window.savenamelabel.pack()
